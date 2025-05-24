@@ -35,7 +35,8 @@ const BonjourCommunication = () => {
   const initializeZeroconf = () => {
     try {
       // 创建新的 Zeroconf 实例
-      zeroconf.current = new Zeroconf();
+      const zeroconfInstance = new Zeroconf();
+      zeroconf.current = zeroconfInstance;
       setupZeroconf();
       startScan();
     } catch (error) {
@@ -45,7 +46,11 @@ const BonjourCommunication = () => {
   };
 
   const setupZeroconf = () => {
-    if (!zeroconf.current) return;
+    if (!zeroconf.current) {
+      Alert.alert("设备发现服务未初始化", "请检查网络连接");
+      return;
+    }
+    Alert.alert("设备发现服务已初始化", "请确保在同一 WiFi 网络中");
 
     zeroconf.current.on("start", () => {
       console.log("Zeroconf scan started");
@@ -94,9 +99,25 @@ const BonjourCommunication = () => {
     try {
       setServices([]);
       setIsScanning(true);
+      // 在调用 scan 之前再次打印日志
+      console.log(
+        "[startScan] Right before scan call. zeroconf.current is:",
+        zeroconf.current
+      );
+
+      // 可以再加一个防御性检查
+      if (!zeroconf.current) {
+        console.error(
+          "[startScan] CRITICAL: zeroconf.current became null unexpectedly just before scan call!"
+        );
+        Alert.alert("扫描严重错误", "设备发现服务实例丢失");
+        setIsScanning(false); // 重置状态
+        return;
+      }
       zeroconf.current.scan("easypasta", "tcp", "local.");
+      console.log("[startScan] Scan method called successfully.");
     } catch (error) {
-      console.error("Start scan error:", error);
+      console.error("[startScan] ERROR during scan:", error);
       setIsScanning(false);
       Alert.alert("启动扫描失败", error.toString());
     }
